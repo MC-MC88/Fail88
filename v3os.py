@@ -9,43 +9,43 @@
 #   ██      ██   ███    ███  ███    ███  ███    ███
 #   ██      ██    ████████    ████████    ████████
 #
-#   M C 8 8   ·   D E E P   F R E E Z E   F O R   A N D R O I D
-#
-#   Mohamed Cheikh  ·  mohamed005cheikh@gmail.com
-#
-#   The phone stays. The reach ends.
-#
-# ═══════════════════════════════════════════════════════════════════════════
-#
-#   MC88 is state-first.
-#
-#   Before it touches anything on your device, it records what your device
-#   already is. That record is written to a JSON file under logs/. It is the
-#   ONLY thing that makes restoration possible — MC88 keeps no memory of
-#   what it did beyond that file.
-#
-#   A tool that forgets on purpose is a tool you can trust.
-#   There is no cloud, no account, no sync. Only the file on disk.
-#
-#   Interactive use — one question, one answer:
-#
-#       $ ./mc88.py
-#       Freeze (Y) or Restore (N)?
-#
-#   Y → freeze apps according to a profile.
-#   N → restore the device to the state before the last freeze.
-#
-#   Advanced users may invoke subcommands directly:
-#
-#       $ ./mc88.py doctor
-#       $ ./mc88.py plan balanced
-#       $ ./mc88.py apply balanced --yes
-#       $ ./mc88.py restore latest --dry-run
-#       $ ./mc88.py verify latest
-#
-#   License: MIT. See LICENSE at repository root.
-#
-# ═══════════════════════════════════════════════════════════════════════════
+   M C 8 8   ·   D E E P   F R E E Z E   F O R   A N D R O I D
+
+   Mohamed Cheikh  ·  mohamed005cheikh@gmail.com
+
+   The phone stays. The reach ends.
+
+ ═══════════════════════════════════════════════════════════════════════════
+
+   MC88 is state-first.
+
+   Before it touches anything on your device, it records what your device
+   already is. That record is written to a JSON file under logs/. It is the
+   ONLY thing that makes restoration possible — MC88 keeps no memory of
+   what it did beyond that file.
+
+   A tool that forgets on purpose is a tool you can trust.
+   There is no cloud, no account, no sync. Only the file on disk.
+
+   Interactive use — one question, one answer:
+
+       $ ./mc88.py
+       Freeze (Y) or Restore (N)?
+
+   Y → freeze apps according to a profile.
+   N → restore the device to the state before the last freeze.
+
+   Advanced users may invoke subcommands directly:
+
+       $ ./mc88.py doctor
+       $ ./mc88.py plan balanced
+       $ ./mc88.py apply balanced --yes
+       $ ./mc88.py restore latest --dry-run
+       $ ./mc88.py verify latest
+
+   License: MIT. See LICENSE at repository root.
+
+ ═══════════════════════════════════════════════════════════════════════════
 
 from __future__ import annotations
 
@@ -63,17 +63,17 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 
-# ─── Constants ──────────────────────────────────────────────────────────────
+ ─── Constants ──────────────────────────────────────────────────────────────
 
 MC88_VERSION = "0.3.0"
 MC88_SCHEMA = "mc88-state-v1"
 MC88_ROOT = Path(__file__).resolve().parent
 MC88_LOGS = MC88_ROOT / "logs"
 MC88_PROFILES = MC88_ROOT / "profiles"
-MC88_ACTIVE = MC88_ROOT / ".mc88-active"   # marker: id of the currently active session
+MC88_ACTIVE = MC88_ROOT / ".mc88-active"    marker: id of the currently active session
 
 
-# ─── Colors ─────────────────────────────────────────────────────────────────
+ ─── Colors ─────────────────────────────────────────────────────────────────
 
 def _color_enabled() -> bool:
     return sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
@@ -115,7 +115,7 @@ def banner() -> None:
     say()
 
 
-# ─── ADB wrapper ────────────────────────────────────────────────────────────
+ ─── ADB wrapper ────────────────────────────────────────────────────────────
 
 class AdbError(RuntimeError):
     pass
@@ -148,7 +148,7 @@ class Adb:
     def shell(self, *args: str, check: bool = True) -> str:
         return self._run("shell", *args, check=check)
 
-    # ── Preconditions ────────────────────────────────────────────────────
+     ── Preconditions ────────────────────────────────────────────────────
 
     def select_single_device(self) -> None:
         out = self._run("devices")
@@ -160,7 +160,7 @@ class Adb:
                            "Disconnect all but one.")
         self._serial = devices[0].split("\t", 1)[0]
 
-    # ── Reads ────────────────────────────────────────────────────────────
+     ── Reads ────────────────────────────────────────────────────────────
 
     def serial(self) -> str:
         return self._run("get-serialno").strip()
@@ -188,7 +188,7 @@ class Adb:
     def airplane(self) -> str:
         return self.shell("settings", "get", "global", "airplane_mode_on").strip()
 
-    # ── Writes ───────────────────────────────────────────────────────────
+     ── Writes ───────────────────────────────────────────────────────────
 
     def disable(self, pkg: str) -> bool:
         try:
@@ -219,12 +219,12 @@ class Adb:
             return False
 
 
-# ─── Package state ──────────────────────────────────────────────────────────
+ ─── Package state ──────────────────────────────────────────────────────────
 
 @dataclass
 class PackageSnapshot:
     """A snapshot of packages relevant to a profile."""
-    states: dict[str, str] = field(default_factory=dict)  # pkg -> enabled|disabled-user|absent
+    states: dict[str, str] = field(default_factory=dict)   pkg -> enabled|disabled-user|absent
 
     @classmethod
     def read(cls, adb: Adb, packages: Iterable[str]) -> "PackageSnapshot":
@@ -256,7 +256,7 @@ class NetworkSnapshot:
         )
 
 
-# ─── Session log ────────────────────────────────────────────────────────────
+ ─── Session log ────────────────────────────────────────────────────────────
 
 @dataclass
 class SessionLog:
@@ -311,7 +311,7 @@ class SessionLog:
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # Atomic write: temp + rename, so a crash never leaves a half-written log.
+         Atomic write: temp + rename, so a crash never leaves a half-written log.
         fd, tmp = tempfile.mkstemp(dir=str(path.parent),
                                    prefix=".mc88-", suffix=".json")
         try:
@@ -334,13 +334,13 @@ class SessionLog:
         return cls(**data)
 
 
-# ─── Profiles ───────────────────────────────────────────────────────────────
+ ─── Profiles ───────────────────────────────────────────────────────────────
 
 @dataclass
 class Profile:
     name: str
     packages: list[str]
-    network_off: bool  # true if the profile's header says "network: on"
+    network_off: bool   true if the profile's header says "network: on"
 
     @classmethod
     def load(cls, name: str) -> "Profile":
@@ -353,11 +353,11 @@ class Profile:
             line = raw.strip()
             if not line:
                 continue
-            if line.startswith("#"):
+            if line.startswith(""):
                 if "network:" in line and "on" in line.split("network:", 1)[1]:
                     network_off = True
                 continue
-            packages.append(line.split()[0])  # tolerate trailing whitespace
+            packages.append(line.split()[0])   tolerate trailing whitespace
         return cls(name=name, packages=packages, network_off=network_off)
 
     @staticmethod
@@ -367,7 +367,7 @@ class Profile:
         return sorted(p.stem for p in MC88_PROFILES.glob("*.txt"))
 
 
-# ─── Session path helpers ───────────────────────────────────────────────────
+ ─── Session path helpers ───────────────────────────────────────────────────
 
 def new_session_id() -> str:
     return "mc88-" + datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -394,7 +394,7 @@ def resolve_session(arg: str) -> Path:
     die(f"Session not found: {arg}")
 
 
-# ─── Active-session marker ──────────────────────────────────────────────────
+ ─── Active-session marker ──────────────────────────────────────────────────
 
 def active_session_id() -> Optional[str]:
     """Return the id of the currently-active session, or None."""
@@ -403,7 +403,7 @@ def active_session_id() -> Optional[str]:
     sid = MC88_ACTIVE.read_text(encoding="utf-8").strip()
     if not sid:
         return None
-    # Sanity: the marker must point to a real log file. If not, forget it.
+     Sanity: the marker must point to a real log file. If not, forget it.
     if not session_path(sid).exists():
         MC88_ACTIVE.unlink(missing_ok=True)
         return None
@@ -418,7 +418,7 @@ def clear_active_session() -> None:
     MC88_ACTIVE.unlink(missing_ok=True)
 
 
-# ─── Core operations (reused by both CLI and interactive mode) ──────────────
+ ─── Core operations (reused by both CLI and interactive mode) ──────────────
 
 def _do_apply(adb: Adb, profile_name: str, *, confirm: bool = True) -> int:
     """Core apply logic. Assumes a device is already selected."""
@@ -461,7 +461,7 @@ def _do_apply(adb: Adb, profile_name: str, *, confirm: bool = True) -> int:
         before_network=before_net,
     )
     log_path = session_path(session_id)
-    log.save(log_path)   # written now; rewritten at the end with actions+after
+    log.save(log_path)    written now; rewritten at the end with actions+after
     info(f"Session: {session_id}")
 
     info("Applying freeze…")
